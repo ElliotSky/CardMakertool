@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桌游卡片制作器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>🎴 桌游角色卡片制作器</h1>
+
+        <!-- 编辑器 -->
+        <div class="editor">
+            <h2>📝 角色信息</h2>
+            
+            <div class="form-group">
+                <label>角色名称</label>
+                <input type="text" id="roleName" placeholder="输入角色名称" value="中央决策层">
+            </div>
+
+            <div class="form-group">
+                <label>角色配图</label>
+                <input type="file" id="roleImageInput" accept="image/*" onchange="handleImageUpload(event)" style="display: none;">
+                <button type="button" class="add-btn" onclick="document.getElementById('roleImageInput').click()" style="width: 100%; margin-bottom: 8px;">选择图片</button>
+                <button type="button" class="reset-btn" onclick="removeImage()" style="width: 100%; padding: 6px; font-size: 12px;">清除图片</button>
+            </div>
+
+            <div class="form-group">
+                <label>卡牌编号</label>
+                <input type="text" id="cardId" placeholder="如: R-001" value="R-001">
+            </div>
+
+            <div class="form-group">
+                <label>卡牌系列</label>
+                <input type="text" id="cardSet" placeholder="如: TABLETOP RPG" value="角色卡" oninput="updatePreview(); updateSkillTitleByCardSet();">
+            </div>
+
+            <!-- 卡牌尺寸设置 -->
+            <div class="section-block">
+                <h3 style="cursor: pointer;" onclick="toggleCardSize()">
+                    <span>📐 卡牌尺寸</span>
+                    <span id="cardSizeToggle" style="font-size: 0.8rem; color: #95a5a6;">▼</span>
+                </h3>
+                <div id="cardSizePanel" style="display: none;">
+                    <div class="form-group">
+                        <label>宽度 (px)</label>
+                        <input type="number" id="cardWidth" placeholder="宽度" value="252" min="150" max="600" oninput="updateCardSize()">
+                    </div>
+                    <div class="form-group">
+                        <label>高度 (px)</label>
+                        <input type="number" id="cardHeight" placeholder="高度" value="352" min="200" max="800" oninput="updateCardSize()">
+                    </div>
+                    <div class="form-group">
+                        <label>配图框高度 (px)</label>
+                        <input type="number" id="imageHeight" placeholder="配图框高度" value="120" min="60" max="300" oninput="updateImageHeight()">
+                    </div>
+                    <div class="form-group">
+                        <label>预设比例</label>
+                        <select id="cardPreset" onchange="applyPreset()">
+                            <option value="custom">自定义</option>
+                            <option value="63:88" selected>标准卡牌 (63:88)</option>
+                            <option value="2:3">2:3</option>
+                            <option value="3:4">3:4</option>
+                            <option value="1:1">正方形 (1:1)</option>
+                            <option value="4:3">横向 (4:3)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡牌样式 -->
+            <div class="section-block">
+                <h3>🎨 卡牌样式</h3>
+                <div class="form-group">
+                    <label>颜色模板 <span style="font-size: 12px; color: #888;">(双击重命名，右键保存当前配色)</span></label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <button type="button" class="save-template-btn" onclick="saveCurrentColors()" title="将当前配色保存为新模板">💾 保存当前配色</button>
+                    </div>
+                    <div id="colorTemplates" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                        <!-- 模板将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>配色设置</label>
+                    <div class="color-picker-group">
+                        <div class="color-option">
+                            <span>主色</span>
+                            <input type="color" id="primaryColor" value="#0B0E11" oninput="updateColors()">
+                        </div>
+                        <div class="color-option">
+                            <span>辅助色</span>
+                            <input type="color" id="accentColor" value="#4A1414" oninput="updateColors()">
+                        </div>
+                        <div class="color-option">
+                            <span>点缀色</span>
+                            <input type="color" id="accentColor2" value="#C2A35A" oninput="updateColors()">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>内容间距 (px)</label>
+                    <input type="number" id="spacingSize" min="4" max="20" value="8" oninput="updateSpacingSize()">
+                </div>
+            </div>
+
+            <!-- 文字样式配置 -->
+            <div class="section-block">
+                <h3 style="cursor: pointer;" onclick="toggleTextStyles()">
+                    <span>✏️ 文字样式</span>
+                    <span id="textStylesToggle" style="font-size: 0.8rem; color: #95a5a6;">▼</span>
+                </h3>
+                <div id="textStylesPanel" style="display: none;">
+                    <!-- 角色名称样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>角色名称</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('roleName')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="roleNameStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="roleNameSize" min="6" max="32" value="16" oninput="updateTextStyle('roleName')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="roleNameFont" onchange="updateTextStyle('roleName')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="roleNameBold" checked onchange="updateTextStyle('roleName')">
+                                    加粗
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 技能标题样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>技能标题</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('sectionTitle')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="sectionTitleStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="sectionTitleSize" min="6" max="24" value="12" oninput="updateTextStyle('sectionTitle')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="sectionTitleFont" onchange="updateTextStyle('sectionTitle')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="sectionTitleBold" checked onchange="updateTextStyle('sectionTitle')">
+                                    加粗
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 技能名称样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>技能名称</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('skillName')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="skillNameStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="skillNameSize" min="6" max="24" value="10" oninput="updateTextStyle('skillName')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="skillNameFont" onchange="updateTextStyle('skillName')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="skillNameBold" checked onchange="updateTextStyle('skillName')">
+                                    加粗
+                                </label>
+                            </div>
+                            <div class="style-control-group">
+                                <label>缩放比例</label>
+                                <input type="number" id="skillNameScale" min="0.1" max="2" step="0.1" value="0.9" oninput="updateTextStyle('skillName')">
+                                <span style="font-size: 0.75rem; color: #95a5a6;">(用于绕过浏览器最小字体限制)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 技能描述样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>技能描述</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('skillDesc')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="skillDescStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="skillDescSize" min="4" max="20" value="7" oninput="updateTextStyle('skillDesc')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="skillDescFont" onchange="updateTextStyle('skillDesc')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="skillDescBold" onchange="updateTextStyle('skillDesc')">
+                                    加粗
+                                </label>
+                            </div>
+                            <div class="style-control-group">
+                                <label>缩放比例</label>
+                                <input type="number" id="skillDescScale" min="0.1" max="2" step="0.1" value="0.8" oninput="updateTextStyle('skillDesc')">
+                                <span style="font-size: 0.75rem; color: #95a5a6;">(用于绕过浏览器最小字体限制，建议0.5-1.0)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 消耗标签样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>消耗标签</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('skillCost')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="skillCostStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="skillCostSize" min="6" max="18" value="8" oninput="updateTextStyle('skillCost')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="skillCostFont" onchange="updateTextStyle('skillCost')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="skillCostBold" onchange="updateTextStyle('skillCost')">
+                                    加粗
+                                </label>
+                            </div>
+                            <div class="style-control-group">
+                                <label>缩放比例</label>
+                                <input type="number" id="skillCostScale" min="0.1" max="2" step="0.1" value="0.7" oninput="updateTextStyle('skillCost')">
+                                <span style="font-size: 0.75rem; color: #95a5a6;">(用于绕过浏览器最小字体限制)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 卡牌编号样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>卡牌编号</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('cardId')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="cardIdStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="cardIdSize" min="6" max="18" value="9" oninput="updateTextStyle('cardId')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="cardIdFont" onchange="updateTextStyle('cardId')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="cardIdBold" checked onchange="updateTextStyle('cardId')">
+                                    加粗
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 卡牌系列样式 -->
+                    <div class="text-style-item">
+                        <div class="text-style-header">
+                            <span>卡牌系列</span>
+                            <button type="button" class="style-toggle-btn" onclick="toggleStyleItem('cardSet')">展开</button>
+                        </div>
+                        <div class="text-style-content" id="cardSetStyles" style="display: none;">
+                            <div class="style-control-group">
+                                <label>字号 (px)</label>
+                                <input type="number" id="cardSetSize" min="6" max="18" value="9" oninput="updateTextStyle('cardSet')">
+                            </div>
+                            <div class="style-control-group">
+                                <label>字体</label>
+                                <select id="cardSetFont" onchange="updateTextStyle('cardSet')">
+                                    <option value="'Microsoft YaHei', 'PingFang SC', sans-serif" selected>微软雅黑</option>
+                                    <option value="'SimHei', sans-serif">黑体</option>
+                                    <option value="'SimSun', serif">宋体</option>
+                                    <option value="'KaiTi', serif">楷体</option>
+                                    <option value="Arial, sans-serif">Arial</option>
+                                </select>
+                            </div>
+                            <div class="style-control-group">
+                                <label>
+                                    <input type="checkbox" id="cardSetBold" onchange="updateTextStyle('cardSet')">
+                                    加粗
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技能 -->
+            <div class="section-block">
+                <h3>
+                    <span>⚔️ 技能</span>
+                    <button class="add-btn" onclick="addSkill()">+ 添加</button>
+                </h3>
+                <div class="form-group">
+                    <label>技能标题</label>
+                    <input type="text" id="skillSectionTitle" placeholder="技能标题" value="⚔ 技能" oninput="updatePreview()">
+                </div>
+                <div id="skillsContainer"></div>
+            </div>
+
+
+            <!-- JSON -->
+            <div class="json-section">
+                <h3>📦 数据</h3>
+                <div class="json-buttons">
+                    <button class="json-btn" onclick="exportJSON()">导出JSON</button>
+                    <button class="json-btn" onclick="importJSON()">导入JSON</button>
+                    <button class="json-btn" onclick="loadExample()">示例</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预览 -->
+        <div class="preview-section">
+            <h2>👁️ 卡片预览</h2>
+            
+            <div class="card-tabs">
+                <button class="tab-btn active" onclick="showCard('front')">正面</button>
+                <button class="tab-btn" onclick="showCard('back')">背面</button>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 10px; width: 100%;">
+                <label style="font-size: 0.85rem;">预览缩放 (%)</label>
+                <input type="range" id="previewScale" min="50" max="150" value="100" oninput="updatePreviewScale()" style="width: 100%;">
+                <span id="previewScaleValue" style="font-size: 0.8rem; color: #bdc3c7;">100%</span>
+            </div>
+
+            <div class="card-container">
+                <!-- 卡牌正面 -->
+                <div class="role-card" id="roleCard">
+                    <div class="corner-decoration top-left"></div>
+                    <div class="corner-decoration top-right"></div>
+                    <div class="corner-decoration bottom-left"></div>
+                    <div class="corner-decoration bottom-right"></div>
+
+                    <div class="card-header" id="cardHeader">
+                        <div class="role-name" id="displayRoleName">中央决策层</div>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="role-image-container" id="roleImageContainer">
+                            <img id="displayRoleImage" src="" alt="" style="display: none;">
+                        </div>
+                        
+                        <div class="skills-section">
+                            <div class="section-title" id="displaySkillTitle">⚔ 技能</div>
+                            <div class="skills-list" id="displaySkills"></div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer">
+                        <span class="card-id" id="displayCardId">R-001</span>
+                        <span class="card-set" id="displayCardSet">角色卡</span>
+                    </div>
+                </div>
+
+                <!-- 卡牌背面 -->
+                <div class="card-back" id="cardBack" style="display: none;">
+                    <div class="card-back-content">
+                        <div class="card-back-logo">🎴</div>
+                        <div class="card-back-title">ROLE CARD</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="export-btn" onclick="exportAsImage()">📷 导出图片</button>
+                <button class="reset-btn" onclick="resetCard()">🔄 重置</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="javascript.js"></script>
+</body>
+</html>
